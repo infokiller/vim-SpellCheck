@@ -124,6 +124,13 @@ endif
 command! -bar -bang -range=% -nargs=* -complete=customlist,SpellCheckCompleteFunc SpellCheck  call SpellCheck#quickfix#List(<line1>, <line2>, <bang>0, 0, <q-args>)
 command! -bar -bang -range=% -nargs=* -complete=customlist,SpellCheckCompleteFunc SpellLCheck call SpellCheck#quickfix#List(<line1>, <line2>, <bang>0, 1, <q-args>)
 
+if SpellCheck#ShouldUseALE()
+  augroup SpellCheckALE
+    autocmd!
+    autocmd User ALEWantResults call SpellCheck#quickfix#CheckBuffer(g:ale_want_results_buffer)
+  augroup END
+endif
+
 let &cpo = s:save_cpo
 unlet s:save_cpo
 " vim: set ts=8 sts=4 sw=4 noexpandtab ff=unix fdm=syntax :

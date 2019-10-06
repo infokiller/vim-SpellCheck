@@ -13,6 +13,8 @@
 let s:save_cpo = &cpo
 set cpo&vim
 
+let g:SpellCheck_ALELinterName = get(g:, 'SpellCheck_ALELinterName', 'vim-spellcheck')
+
 function! s:GotoNextLine( lastLine )
     if line('.') < a:lastLine
 	call cursor(line('.') + 1, 1)
@@ -24,9 +26,10 @@ endfunction
 function! s:GetErrorContext( lnum, col )
     return matchstr(getline(a:lnum), printf(g:SpellCheck_ErrorContextPattern, '\%' . a:col . 'c'))
 endfunction
-function! s:RetrieveSpellErrors( firstLine, lastLine, types, predicates )
+function! s:RetrieveSpellErrors(bufnr, firstLine, lastLine, types, predicates )
     let l:spellErrorInfo = {}
     let l:spellErrorList = []
+    exec 'buffer ' . a:bufnr
     call cursor(a:firstLine, 1)
 
     while 1
@@ -49,7 +52,8 @@ function! s:RetrieveSpellErrors( firstLine, lastLine, types, predicates )
 		endif
 	    else
 		let l:spellErrorInfo[l:spellBadWord] = {
-	    \	    'type': l:errorType,
+	    \	    'type': 'W',
+	    \	    'spell_error_type': l:errorType,
 	    \	    'lnum': l:lnum,
 	    \	    'col': l:col,
 	    \	    'count': 1,
@@ -75,7 +79,7 @@ function! s:ToQfEntry( error, bufnr, spellErrorInfo )
     let l:entry.text = a:error .
     \   (l:entry.count > 1 ? ' (' . l:entry.count . ')' : '') .
     \   (empty(l:entry.context) ? '' : "\t\t" . join(l:entry.context, ', '))
-    let l:entry.type = (l:entry.type ==# 'bad' ? '' : toupper(l:entry.type[0]))
+    let l:entry.spell_error_type = (l:entry.spell_error_type ==# 'bad' ? '' : toupper(l:entry.spell_error_type[0]))
     return l:entry
 endfunction
 function! s:FillQuickfixList( bufnr, spellErrorList, spellErrorInfo, isNoJump, isUseLocationList )
@@ -83,7 +87,14 @@ function! s:FillQuickfixList( bufnr, spellErrorList, spellErrorInfo, isNoJump, i
 
     silent call ingo#event#Trigger('QuickFixCmdPre ' . (a:isUseLocationList ? 'lspell' : 'spell'))  " Allow hooking into the quickfix update.
 
-    if a:isUseLocationList
+    if SpellCheck#ShouldUseALE()
+	call ale#other_source#ShowResults(a:bufnr, g:SpellCheck_ALELinterName, l:qflist)
+	if get(g:, 'ale_set_quickfix', 0)
+	    let l:list = 'c'
+	else
+	    let l:list = 'l'
+	endif
+    elseif a:isUseLocationList
 	let l:list = 'l'
 	call setloclist(0, l:qflist, ' ')
     else
@@ -105,17 +116,15 @@ function! s:FillQuickfixList( bufnr, spellErrorList, spellErrorInfo, isNoJump, i
 	endif
     endif
 
-    if len(a:spellErrorList) > 0
-	if ! a:isNoJump
-	    execute l:list . 'first'
-	    normal! zv
-	endif
+    if len(a:spellErrorList) > 0 && ! a:isNoJump
+	execute l:list . 'first'
+	normal! zv
     endif
 
     silent call ingo#event#Trigger('QuickFixCmdPost ' . (a:isUseLocationList ? 'lspell' : 'spell')) " Allow hooking into the quickfix update.
 endfunction
 
-function! SpellCheck#quickfix#List( firstLine, lastLine, isNoJump, isUseLocationList, arguments )
+function! SpellCheck#quickfix#ListBuffer(bufnr, firstLine, lastLine, isNoJump, isUseLocationList, arguments )
     if ! SpellCheck#CheckEnabledSpelling()
 	return 2
     endif
@@ -123,7 +132,10 @@ function! SpellCheck#quickfix#List( firstLine, lastLine, isNoJump, isUseLocation
     let [l:types, l:predicates] = SpellCheck#ParseArguments(a:arguments)
     let l:save_view = winsaveview()
     try
-	let [l:spellErrorList, l:spellErrorInfo] = s:RetrieveSpellErrors(a:firstLine, a:lastLine, l:types, l:predicates)
+	if SpellCheck#ShouldUseALE()
+	    call ale#other_source#StartChecking(a:bufnr, g:SpellCheck_ALELinterName)
+	endif
+	let [l:spellErrorList, l:spellErrorInfo] = s:RetrieveSpellErrors(a:bufnr, a:firstLine, a:lastLine, l:types, l:predicates)
     catch /^Vim\%((\a\+)\)\=:/
 	call ingo#msg#VimExceptionMsg()
 	return 1
@@ -131,12 +143,20 @@ function! SpellCheck#quickfix#List( firstLine, lastLine, isNoJump, isUseLocation
 	call winrestview(l:save_view)
     endtry
 
-    call s:FillQuickfixList(bufnr(''), l:spellErrorList, l:spellErrorInfo, a:isNoJump, a:isUseLocationList)
+    call s:FillQuickfixList(a:bufnr, l:spellErrorList, l:spellErrorInfo, a:isNoJump, a:isUseLocationList)
     if len(l:spellErrorList) == 0
 	call SpellCheck#NoErrorsFoundMessage(l:types, l:predicates)
     endif
 
     return (len(l:spellErrorList) > 0)
+endfunction
+
+function! SpellCheck#quickfix#List( firstLine, lastLine, isNoJump, isUseLocationList, arguments )
+    return SpellCheck#quickfix#ListBuffer(bufnr(''), a:firstLine, a:lastLine, a:isNoJump, a:isUseLocationList, a:arguments)
+endfunction
+
+function! SpellCheck#quickfix#CheckBuffer(bufnr)
+    echomsg 'TODO: Implement'
 endfunction
 
 let &cpo = s:save_cpo
