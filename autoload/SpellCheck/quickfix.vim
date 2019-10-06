@@ -155,8 +155,12 @@ function! SpellCheck#quickfix#List( firstLine, lastLine, isNoJump, isUseLocation
     return SpellCheck#quickfix#ListBuffer(bufnr(''), a:firstLine, a:lastLine, a:isNoJump, a:isUseLocationList, a:arguments)
 endfunction
 
-function! SpellCheck#quickfix#CheckBuffer(bufnr)
-    echomsg 'TODO: Implement'
+function! SpellCheck#quickfix#CheckForALE()
+    if !getbufvar(g:ale_want_results_buffer, 'SpellCheck_RunOnALECycle', g:SpellCheck_RunOnALECycle)
+	return
+    endif
+    let l:numLines = len(getbufline(g:ale_want_results_buffer, 1, '$'))
+    call SpellCheck#quickfix#ListBuffer(g:ale_want_results_buffer, 1, l:numLines, 1, 1, '')
 endfunction
 
 let &cpo = s:save_cpo

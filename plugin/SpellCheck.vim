@@ -70,6 +70,12 @@ if ! exists('g:SpellCheck_Predicates')
     let g:SpellCheck_Predicates = ''
 endif
 
+if ! exists('g:SpellCheck_UseALEIfAvailable')
+    let g:SpellCheck_UseALEIfAvailable = 1
+endif
+if ! exists('g:SpellCheck_RunOnALECycle')
+    let g:SpellCheck_RunOnALECycle = 0
+endif
 
 "- mappings --------------------------------------------------------------------
 
@@ -124,11 +130,11 @@ endif
 command! -bar -bang -range=% -nargs=* -complete=customlist,SpellCheckCompleteFunc SpellCheck  call SpellCheck#quickfix#List(<line1>, <line2>, <bang>0, 0, <q-args>)
 command! -bar -bang -range=% -nargs=* -complete=customlist,SpellCheckCompleteFunc SpellLCheck call SpellCheck#quickfix#List(<line1>, <line2>, <bang>0, 1, <q-args>)
 
-if SpellCheck#ShouldUseALE()
-  augroup SpellCheckALE
-    autocmd!
-    autocmd User ALEWantResults call SpellCheck#quickfix#CheckBuffer(g:ale_want_results_buffer)
-  augroup END
+if g:SpellCheck_UseALEIfAvailable
+    augroup SpellCheckALE
+	autocmd!
+	autocmd User ALEWantResults call SpellCheck#quickfix#CheckForALE()
+    augroup END
 endif
 
 let &cpo = s:save_cpo
