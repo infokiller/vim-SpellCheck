@@ -167,7 +167,14 @@ function! SpellCheck#NoErrorsFoundMessage( types, predicates )
 endfunction
 
 function! SpellCheck#ShouldUseALE()
-    return exists(':ALEInfo')
+    if !exists(':ALEInfo') || !g:SpellCheck_UseALEIfAvailable
+	return 0
+    endif
+    let l:is_ale_enabled = g:ale_enabled
+    if exists('b:ale_enabled')
+	let l:is_ale_enabled = b:ale_enabled
+    endif
+    return l:is_ale_enabled
 endfunction
 
 let &cpo = s:save_cpo
