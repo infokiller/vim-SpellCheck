@@ -1,12 +1,9 @@
 " SpellCheck/quickfix.vim: Show all spelling errors as a quickfix list.
 "
 " DEPENDENCIES:
-"   - SpellCheck.vim autoload script
-"   - ingo/collections/unique.vim autoload script
-"   - ingo/event.vim autoload script
-"   - ingo/msg.vim autoload script
+"   - ingo-library.vim plugin
 "
-" Copyright: (C) 2011-2017 Ingo Karkat
+" Copyright: (C) 2011-2020 Ingo Karkat
 "   The VIM LICENSE applies to this script; see ':help copyright'.
 "
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
@@ -125,7 +122,7 @@ function! s:FillQuickfixList( bufnr, spellErrorList, spellErrorInfo, isNoJump, i
 endfunction
 
 function! SpellCheck#quickfix#ListBuffer(bufnr, firstLine, lastLine, isNoJump, isUseLocationList, arguments )
-    if ! SpellCheck#CheckEnabledSpelling()
+    if ingo#window#quickfix#IsQuickfixList(1) == (a:isUseLocationList ? 2 : 1) || ! SpellCheck#CheckEnabledSpelling()
 	return 2
     endif
 
