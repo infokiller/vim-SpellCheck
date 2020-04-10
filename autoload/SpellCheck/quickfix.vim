@@ -82,6 +82,8 @@ endfunction
 function! s:FillQuickfixList( bufnr, spellErrorList, spellErrorInfo, isNoJump, isUseLocationList )
     let l:qflist = map(a:spellErrorList, 's:ToQfEntry(v:val, a:bufnr, a:spellErrorInfo[v:val])')
 
+    "let l:quickfixType = (a:isUseLocationList ? 2 : 1)
+    "call ingo#window#quickfix#CmdPre(l:quickfixType, '[l]spell')
     silent call ingo#event#Trigger('QuickFixCmdPre ' . (a:isUseLocationList ? 'lspell' : 'spell'))  " Allow hooking into the quickfix update.
 
     if SpellCheck#ShouldUseALE()
@@ -119,6 +121,7 @@ function! s:FillQuickfixList( bufnr, spellErrorList, spellErrorInfo, isNoJump, i
     endif
 
     silent call ingo#event#Trigger('QuickFixCmdPost ' . (a:isUseLocationList ? 'lspell' : 'spell')) " Allow hooking into the quickfix update.
+    "call ingo#window#quickfix#CmdPost(l:quickfixType, '[l]spell')
 endfunction
 
 function! SpellCheck#quickfix#ListBuffer(bufnr, firstLine, lastLine, isNoJump, isUseLocationList, arguments )
